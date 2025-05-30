@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>StormRock Loan Application</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f4f8;
+      padding: 20px;
+      color: #000;
+    }
+    form {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 15px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px;
+      width: 100%;
+      background-color: #0077b6;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #023e8a;
+    }
+    .warning {
+      color: red;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h2 style="text-align:center;">📋 Loan Application Form</h2>
+
+<form id="loanForm">
+  <label>Full Name</label>
+  <input type="text" id="fullName" required />
+
+  <label>Email Address</label>
+  <input type="email" id="email" required />
+
+  <label>Phone Number</label>
+  <input type="tel" id="phone" required />
+
+  <label>Home Address</label>
+  <input type="text" id="address" required />
+
+  <label>Postal Code</label>
+  <input type="text" id="postalCode" required />
+
+  <label>Nationality</label>
+  <select id="nationality" required>
+    <option value="">Select</option>
+    <option>US</option><option>UK</option><option>Canada</option><option>UAE</option>
+    <option>Germany</option><option>Saudi Arabia</option><option>Qatar</option>
+    <option>Switzerland</option><option>Netherland</option><option>Romania</option><option>Republic of Ireland</option>
+  </select>
+
+  <label>Loan Amount ($500 – $20,000)</label>
+  <input type="number" id="amount" min="500" max="20000" required />
+
+  <label>Currency</label>
+  <select id="currency" required>
+    <option>USD</option><option>CAD</option><option>GBP</option>
+    <option>EUR</option><option>AED</option>
+  </select>
+
+  <label>Loan Purpose</label>
+  <select id="purpose" required>
+    <option>Personal Loan</option>
+    <option>Business Loan</option>
+    <option>Education Loan</option>
+    <option>Home Loan</option>
+    <option>Car Payment Loan</option>
+  </select>
+
+  <label>Repayment Duration</label>
+  <select id="duration" required>
+    <option>6 months</option>
+    <option>12 months</option>
+    <option>24 months</option>
+  </select>
+
+  <label>Employment Status</label>
+  <select id="employmentStatus" required>
+    <option>Employed</option>
+    <option>Unemployed</option>
+    <option>Self-Employed</option>
+    <option>Student</option>
+    <option>Other</option>
+  </select>
+
+  <label>Marital Status</label>
+  <select id="maritalStatus" required>
+    <option>Single</option>
+    <option>Married</option>
+    <option>Divorced</option>
+    <option>Widowed</option>
+  </select>
+
+  <div class="warning">⚠️ Late payments may lead to additional penalties or legal action.</div>
+
+  <button type="submit">✅ Submit</button>
+</form>
+
+<script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
+<script>
+  Parse.initialize("PyjEtzVCZ3O8MvUweHGmSaDYYHdJyc2qlNDNhgeR      ", " OwKdoq39CHkUAv1ZGJVuRXLcS2oqpLdvTVK03Scq    ");
+  Parse.serverURL = "https://parseapi.back4app.com";
+
+  document.getElementById("loanForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const data = {
+      fullName: document.getElementById("fullName").value,
+      email: document.getElementById("email").value,
+      phone: document.getElementById("phone").value,
+      address: document.getElementById("address").value,
+      postalCode: document.getElementById("postalCode").value,
+      nationality: document.getElementById("nationality").value,
+      amount: parseFloat(document.getElementById("amount").value),
+      currency: document.getElementById("currency").value,
+      purpose: document.getElementById("purpose").value,
+      duration: document.getElementById("duration").value,
+      employmentStatus: document.getElementById("employmentStatus").value,
+      maritalStatus: document.getElementById("maritalStatus").value
+    };
+
+    try {
+      // Save to Applications class
+      const App = new Parse.Object("Applications");
+      Object.keys(data).forEach(key => App.set(key, data[key]));
+      await App.save();
+
+      // Trigger cloud function to send email
+      await Parse.Cloud.run("sendEmail", data);
+
+      alert("✅ Application submitted successfully!");
+      window.location.href = "verification.html"; // Next step
+    } catch (error) {
+      console.error("❌ Submission failed:", error);
+      alert("Something went wrong. Please try again.");
+    }
+  });
+</script>
+
+</body>
+</html>
