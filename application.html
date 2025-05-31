@@ -127,11 +127,14 @@
   <button type="submit">✅ Submit</button>
 </form>
 
+<!-- Parse SDK -->
 <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
 <script>
-  Parse.initialize("PyjEtzVCZ3O8MvUweHGmSaDYYHdJyc2qlNDNhgeR","OwKdoq39CHkUAv1ZGJVuRXLcS2oqpLdvTVK03Scq");
+  // Initialize Parse
+  Parse.initialize("PyjEtzVCZ3O8MvUweHGmSaDYYHdJyc2qlNDNhgeR", "OwKdoq39CHkUAv1ZGJVuRXLcS2oqpLdvTVK03Scq");
   Parse.serverURL = "https://parseapi.back4app.com";
 
+  // Handle form submission
   document.getElementById("loanForm").addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -160,7 +163,10 @@
       await Parse.Cloud.run("sendEmail", data);
 
       alert("✅ Application submitted successfully!");
-      window.location.href = "verification.html"; // Next step
+      window.location.href = "verification.html"; // Go to next step
+    } catch (error) {
+      alert("❌ Failed to submit application: " + error.message);
+      console.error("Submission error:", error);
     }
   });
 </script>
