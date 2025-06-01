@@ -185,9 +185,9 @@
     ctx.clearRect(0, 0, signaturePadCanvas.width, signaturePadCanvas.height);
   });
 
-  // Back button
+  // Back button goes to application page
   backBtn.addEventListener('click', () => {
-    window.location.href = 'application.html';
+    window.location.href = 'application.html'; // Adjust filename/path if different
   });
 
   // Handle form submission
@@ -225,16 +225,10 @@
 
       await Verification.save();
 
-      // Prepare data for email (sending data URLs might be large, so just notify admin that files submitted)
-      const emailData = {
-        message: "New Verification Submission",
-        // You could also send URLs or notes about the submission
-      };
-
-      await Parse.Cloud.run('sendEmail', emailData);
+      // Optional: trigger email via cloud function or other
 
       alert('✅ Verification submitted successfully!');
-      window.location.href = 'origination.html'; // Proceed to next page
+      window.location.href = 'origination.html'; // Redirect to origination page after submit
 
     } catch (error) {
       alert('❌ Failed to submit verification: ' + error.message);
