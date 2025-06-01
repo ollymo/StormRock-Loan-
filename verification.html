@@ -147,18 +147,33 @@
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 2;
 
+  function getPointerPos(e) {
+    const rect = signaturePadCanvas.getBoundingClientRect();
+    if (e.touches && e.touches.length > 0) {
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top
+      };
+    } else {
+      return {
+        x: e.offsetX,
+        y: e.offsetY
+      };
+    }
+  }
+
   function startDrawing(e) {
     isDrawing = true;
+    const pos = getPointerPos(e);
     ctx.beginPath();
-    ctx.moveTo(e.offsetX || e.touches[0].clientX - signaturePadCanvas.getBoundingClientRect().left,
-               e.offsetY || e.touches[0].clientY - signaturePadCanvas.getBoundingClientRect().top);
+    ctx.moveTo(pos.x, pos.y);
     e.preventDefault();
   }
 
   function draw(e) {
     if (!isDrawing) return;
-    ctx.lineTo(e.offsetX || e.touches[0].clientX - signaturePadCanvas.getBoundingClientRect().left,
-               e.offsetY || e.touches[0].clientY - signaturePadCanvas.getBoundingClientRect().top);
+    const pos = getPointerPos(e);
+    ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
     e.preventDefault();
   }
@@ -187,22 +202,16 @@
 
   // Back button goes to application page
   backBtn.addEventListener('click', () => {
-    window.location.href = 'application.html'; // Adjust filename/path if different
+    window.location.href = 'application.html'; // Adjust if your app page has a different path/name
   });
 
-  // Helper to convert file to base64 without prefix
-  function toBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const result = reader.result;
-        const base64 = result.split(',')[1]; // remove data:<mime>;base64, part
-        resolve(base64);
-      };
-      reader.onerror = error => reject(error);
-    });
-  }
+  // Convert file to base64 (without prefix)
+  const toBase64 = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = error => reject(error);
+  });
 
   // Handle form submission
   verificationForm.addEventListener('submit', async (e) => {
@@ -212,10 +221,8 @@
       alert('Please capture a selfie first!');
       return;
     }
-
     const selfieDataUrl = canvas.toDataURL('image/png');
     const signatureDataUrl = signaturePadCanvas.toDataURL('image/png');
-
     const idFile = idDocumentInput.files[0];
     if (!idFile) {
       alert('Please upload your ID document.');
@@ -223,20 +230,20 @@
     }
 
     try {
-      const idDocumentBase64 = await toBase64(idFile);
+      const idFileBase64 = await toBase64(idFile);
 
       const result = await Parse.Cloud.run('submitVerification', {
         selfieDataUrl,
         signatureDataUrl,
-        idDocumentBase64,
-        idDocumentName: idFile.name
+        idFileName: idFile.name,
+        idFileBase64
       });
 
       alert('✅ ' + result);
-      window.location.href = 'origination.html';
+      window.location.href = 'origination.html'; // redirect on success
 
     } catch (error) {
-      alert('❌ Failed to submit verification: ' + error.message);
+      alert('❌ Submission failed: ' + error.message);
       console.error(error);
     }
   });
