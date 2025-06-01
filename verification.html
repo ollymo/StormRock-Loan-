@@ -190,45 +190,50 @@
     window.location.href = 'application.html'; // Adjust filename/path if different
   });
 
+  // Helper to convert file to base64 without prefix
+  function toBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result;
+        const base64 = result.split(',')[1]; // remove data:<mime>;base64, part
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
+  }
+
   // Handle form submission
   verificationForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Convert selfie canvas to data URL
     if (canvas.style.display === 'none') {
       alert('Please capture a selfie first!');
       return;
     }
-    const selfieDataUrl = canvas.toDataURL('image/png');
 
-    // Convert signature canvas to data URL
+    const selfieDataUrl = canvas.toDataURL('image/png');
     const signatureDataUrl = signaturePadCanvas.toDataURL('image/png');
 
-    // Get the uploaded ID document file
     const idFile = idDocumentInput.files[0];
     if (!idFile) {
       alert('Please upload your ID document.');
       return;
     }
 
-    // Prepare Parse File for ID document
-    const parseIdFile = new Parse.File(idFile.name, idFile);
-
-    // Save data to Verification class
-    const Verification = new Parse.Object('Verification');
-
     try {
-      Verification.set('selfie', selfieDataUrl);
-      Verification.set('signature', signatureDataUrl);
-      await parseIdFile.save();
-      Verification.set('idDocument', parseIdFile);
+      const idDocumentBase64 = await toBase64(idFile);
 
-      await Verification.save();
+      const result = await Parse.Cloud.run('submitVerification', {
+        selfieDataUrl,
+        signatureDataUrl,
+        idDocumentBase64,
+        idDocumentName: idFile.name
+      });
 
-      // Optional: trigger email via cloud function or other
-
-      alert('✅ Verification submitted successfully!');
-      window.location.href = 'origination.html'; // Redirect to origination page after submit
+      alert('✅ ' + result);
+      window.location.href = 'origination.html';
 
     } catch (error) {
       alert('❌ Failed to submit verification: ' + error.message);
